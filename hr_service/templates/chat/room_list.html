@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Чаты — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Чаты</h4>
+</div>
+
+{% if create_form %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="post" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-auto">
+          <label class="form-label">Начать чат с кандидатом</label>
+          {{ create_form.candidate }}
+        </div>
+        <div class="col-auto">
+          <button type="submit" name="create_chat" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Создать
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="list-group list-group-flush">
+    {% for room in rooms %}
+      <a href="{% url 'chat:room_detail' room.pk %}" class="list-group-item list-group-item-action">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <i class="bi bi-person-circle me-2"></i>
+            {% if user.is_candidate %}
+              {{ room.recruiter }}
+            {% else %}
+              {{ room.candidate }}
+            {% endif %}
+          </div>
+          <div class="text-muted small">
+            {% with last=room.last_message %}
+              {% if last %}{{ last.created_at|date:"d.m H:i" }}{% endif %}
+            {% endwith %}
+          </div>
+        </div>
+        {% with last=room.last_message %}
+          {% if last %}
+            <div class="text-muted small text-truncate mt-1">{{ last.text|truncatechars:80 }}</div>
+          {% endif %}
+        {% endwith %}
+      </a>
+    {% empty %}
+      <div class="list-group-item text-center text-muted py-4">Нет чатов</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

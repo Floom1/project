@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ doc.title }} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h4 class="mb-1">{{ doc.title }}</h4>
+    <div class="text-muted">
+      Кандидат: {{ doc.candidate }} &middot; Создан: {{ doc.created_at|date:"d.m.Y H:i" }}
+    </div>
+  </div>
+  <div>
+    {% if doc.status == "draft" %}
+      <span class="badge bg-secondary fs-6">Черновик</span>
+    {% elif doc.status == "pending" %}
+      <span class="badge bg-warning text-dark fs-6">На согласовании</span>
+    {% elif doc.status == "approved" %}
+      <span class="badge bg-success fs-6">Согласован</span>
+    {% elif doc.status == "rejected" %}
+      <span class="badge bg-danger fs-6">Отклонён</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if doc.description %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">{{ doc.description }}</div>
+  </div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">История версий</h6></div>
+      <div class="list-group list-group-flush">
+        {% for ver in versions %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Версия {{ ver.version_number }}</strong>
+                <span class="text-muted ms-2">{{ ver.uploaded_at|date:"d.m.Y H:i" }}</span>
+                {% if ver.uploaded_by %}<span class="text-muted">— {{ ver.uploaded_by }}</span>{% endif %}
+              </div>
+              <a href="{{ ver.file.url }}" class="btn btn-sm btn-outline-primary" download>
+                <i class="bi bi-download"></i> Скачать
+              </a>
+            </div>
+            {% if ver.comment %}<div class="text-muted small mt-1">{{ ver.comment }}</div>{% endif %}
+          </div>
+        {% empty %}
+          <div class="list-group-item text-muted">Нет версий</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if approvals %}
+      <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white"><h6 class="mb-0">Согласования</h6></div>
+        <div class="list-group list-group-flush">
+          {% for ap in approvals %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ ap.reviewer }}</strong>
+                  {% if ap.decision == "approved" %}
+                    <span class="badge bg-success ms-2">Согласовано</span>
+                  {% elif ap.decision == "rejected" %}
+                    <span class="badge bg-danger ms-2">Отклонено</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark ms-2">Ожидает</span>
+                  {% endif %}
+                </div>
+                {% if ap.decided_at %}<span class="text-muted">{{ ap.decided_at|date:"d.m.Y H:i" }}</span>{% endif %}
+              </div>
+              {% if ap.comment %}<div class="text-muted small mt-1">{{ ap.comment }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    {% if user.can_manage and doc.status == "pending" %}
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white"><h6 class="mb-0">Согласование</h6></div>
+        <div class="card-body">
+          <a href="{% url 'documents:document_review' doc.pk %}" class="btn btn-primary w-100">
+            <i class="bi bi-check-circle me-1"></i> Рассмотреть
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if user == doc.candidate %}
+      {% if can_submit %}
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+              <button type="submit" name="submit_for_review" class="btn btn-success w-100">
+                <i class="bi bi-send me-1"></i> Отправить на согласование
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><h6 class="mb-0">Загрузить новую версию</h6></div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in new_version_form %}
+              <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            {% endfor %}
+            <button type="submit" name="upload_version" class="btn btn-outline-primary w-100">
+              <i class="bi bi-upload me-1"></i> Загрузить
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> К списку
+  </a>
+</div>
+{% endblock %}

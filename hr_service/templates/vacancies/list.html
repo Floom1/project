@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Вакансии — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="bi bi-briefcase me-2"></i>Вакансии</h4>
+  {% if user.can_manage %}
+    <a href="{% url 'vacancies:vacancy_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Создать вакансию
+    </a>
+  {% endif %}
+</div>
+
+{% if not user.is_candidate %}
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white d-flex gap-2 flex-wrap">
+    <a href="{% url 'vacancies:vacancy_list' %}"
+       class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">Все</a>
+    {% for value, label in status_choices %}
+      <a href="?status={{ value }}"
+         class="btn btn-sm {% if status_filter == value %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  {% for v in vacancies %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="card-title mb-0">{{ v.title }}</h6>
+            {% if v.status == "open" %}
+              <span class="badge bg-success">Открыта</span>
+            {% elif v.status == "on_hold" %}
+              <span class="badge bg-warning text-dark">Приостановлена</span>
+            {% else %}
+              <span class="badge bg-secondary">Закрыта</span>
+            {% endif %}
+          </div>
+          <p class="text-muted small mb-1"><i class="bi bi-building me-1"></i>{{ v.department }}</p>
+          {% if v.salary_from or v.salary_to %}
+            <p class="small mb-2">
+              <i class="bi bi-currency-exchange me-1"></i>
+              {% if v.salary_from %}от {{ v.salary_from|floatformat:0 }}{% endif %}
+              {% if v.salary_to %} до {{ v.salary_to|floatformat:0 }}{% endif %}
+              &#8381;
+            </p>
+          {% endif %}
+          <p class="card-text small">{{ v.description|truncatechars:120 }}</p>
+        </div>
+        <div class="card-footer bg-white border-top-0">
+          <a href="{% url 'vacancies:vacancy_detail' v.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+          {% if user.can_manage %}
+            <span class="float-end text-muted small">{{ v.applications.count }} откликов</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12"><p class="text-center text-muted py-4">Вакансий нет</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

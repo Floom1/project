@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Отклик: {{ app.candidate }} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h4 class="mb-1">{{ app.candidate }}</h4>
+    <span class="text-muted">Вакансия: {{ app.vacancy.title }} &middot; Отклик: {{ app.applied_at|date:"d.m.Y" }}</span>
+  </div>
+  <div>
+    {% if app.status == "new" %}<span class="badge bg-primary fs-6">Новый</span>
+    {% elif app.status == "screening" %}<span class="badge bg-info fs-6">Скрининг</span>
+    {% elif app.status == "interview" %}<span class="badge bg-warning text-dark fs-6">Собеседование</span>
+    {% elif app.status == "offer" %}<span class="badge bg-success fs-6">Оффер</span>
+    {% elif app.status == "hired" %}<span class="badge bg-success fs-6">Нанят</span>
+    {% elif app.status == "rejected" %}<span class="badge bg-danger fs-6">Отклонён</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white"><h6 class="mb-0">Собеседования</h6></div>
+      <div class="list-group list-group-flush">
+        {% for iv in interviews %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ iv.stage.title }}</strong>
+                <span class="text-muted ms-2">{{ iv.scheduled_at|date:"d.m.Y H:i" }}</span>
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                {% if iv.status == "scheduled" %}
+                  <span class="badge bg-warning text-dark">Запланировано</span>
+                  <form method="post" action="{% url 'vacancies:interview_complete' iv.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-success">Завершить</button>
+                  </form>
+                {% elif iv.status == "completed" %}
+                  <span class="badge bg-success">Завершено</span>
+                {% else %}
+                  <span class="badge bg-secondary">Отменено</span>
+                {% endif %}
+                {% if iv.survey %}
+                  <a href="{% url 'chat:survey_results' iv.survey.pk %}" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-clipboard-data"></i>
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+            {% if iv.notes %}<div class="text-muted small mt-1">{{ iv.notes }}</div>{% endif %}
+          </div>
+        {% empty %}
+          <div class="list-group-item text-muted">Собеседований нет</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Назначить собеседование</h6></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Этап</label>
+              <select name="stage_id" class="form-select" required>
+                <option value="">Выберите этап</option>
+                {% for s in stages %}
+                  <option value="{{ s.pk }}">{{ s.order }}. {{ s.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Дата и время</label>
+              {{ schedule_form.scheduled_at }}
+            </div>
+          </div>
+          <button type="submit" name="schedule_interview" class="btn btn-primary mt-3">
+            <i class="bi bi-calendar-plus me-1"></i> Назначить
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white"><h6 class="mb-0">Статус отклика</h6></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {{ status_form.status }}
+          <button type="submit" name="update_status" class="btn btn-outline-primary btn-sm mt-2 w-100">
+            Обновить статус
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Кандидат</h6></div>
+      <div class="card-body">
+        <p class="mb-1"><strong>{{ app.candidate.get_full_name|default:app.candidate.username }}</strong></p>
+        {% if app.candidate.email %}<p class="mb-1 small text-muted">{{ app.candidate.email }}</p>{% endif %}
+        {% if app.candidate.phone %}<p class="mb-1 small text-muted">{{ app.candidate.phone }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{% url 'vacancies:application_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> К списку откликов
+  </a>
+</div>
+{% endblock %}

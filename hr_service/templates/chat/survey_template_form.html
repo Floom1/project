@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_new %}Новый шаблон{% else %}Редактирование: {{ template_obj.title }}{% endif %} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    {% if is_new %}
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><h5 class="mb-0">Новый шаблон опроса</h5></div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">{{ form.title.label }}</label>
+              {{ form.title }}
+            </div>
+            <button type="submit" class="btn btn-primary">Создать</button>
+            <a href="{% url 'chat:survey_template_list' %}" class="btn btn-outline-secondary">Отмена</a>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{ template_obj.title }}</h5>
+          <a href="{% url 'chat:survey_template_list' %}" class="btn btn-sm btn-outline-secondary">К списку</a>
+        </div>
+      </div>
+
+      {% if questions %}
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white"><h6 class="mb-0">Вопросы</h6></div>
+          <div class="list-group list-group-flush">
+            {% for q in questions %}
+              <div class="list-group-item d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>{{ q.order }}.</strong> {{ q.text }}
+                  <span class="badge bg-secondary ms-2">{{ q.get_question_type_display }}</span>
+                  {% if q.options %}
+                    <div class="small text-muted mt-1">Варианты: {{ q.options|join:", " }}</div>
+                  {% endif %}
+                </div>
+                <form method="post" class="ms-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="question_id" value="{{ q.pk }}">
+                  <button type="submit" name="delete_question" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><h6 class="mb-0">Добавить вопрос</h6></div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">{{ q_form.text.label }}</label>
+                {{ q_form.text }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ q_form.question_type.label }}</label>
+                {{ q_form.question_type }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ q_form.order.label }}</label>
+                {{ q_form.order }}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ q_form.options_text.label }}</label>
+                {{ q_form.options_text }}
+                <div class="form-text">Только для типа «Выбор»</div>
+              </div>
+            </div>
+            <button type="submit" name="add_question" class="btn btn-primary mt-3">
+              <i class="bi bi-plus-lg me-1"></i> Добавить
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

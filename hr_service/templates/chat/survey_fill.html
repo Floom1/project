@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Опрос: {{ survey.template.title }} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>{{ survey.template.title }}</h5>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {% for q in questions %}
+            <div class="mb-4">
+              <label class="form-label fw-bold">{{ forloop.counter }}. {{ q.text }}</label>
+
+              {% if q.question_type == "text" %}
+                <textarea name="q_{{ q.id }}" class="form-control" rows="2">{{ existing_answers|default_if_none:"" }}</textarea>
+
+              {% elif q.question_type == "yes_no" %}
+                <div class="d-flex gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="Да" id="q{{ q.id }}_yes"
+                           {% if existing_answers and existing_answers|dictsort:q.id == "Да" %}checked{% endif %}>
+                    <label class="form-check-label" for="q{{ q.id }}_yes">Да</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="Нет" id="q{{ q.id }}_no"
+                           {% if existing_answers and existing_answers|dictsort:q.id == "Нет" %}checked{% endif %}>
+                    <label class="form-check-label" for="q{{ q.id }}_no">Нет</label>
+                  </div>
+                </div>
+
+              {% elif q.question_type == "choice" %}
+                {% for opt in q.options %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q_{{ q.id }}" value="{{ opt }}" id="q{{ q.id }}_{{ forloop.counter }}">
+                    <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i> Отправить ответы
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

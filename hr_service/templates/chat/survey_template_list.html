@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Шаблоны опросов — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Шаблоны опросов</h4>
+  <a href="{% url 'chat:survey_template_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> Создать шаблон
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Название</th>
+          <th>Вопросов</th>
+          <th>Автор</th>
+          <th>Создан</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in templates %}
+          <tr>
+            <td>{{ t.title }}</td>
+            <td>{{ t.questions.count }}</td>
+            <td>{{ t.created_by|default:"—" }}</td>
+            <td>{{ t.created_at|date:"d.m.Y" }}</td>
+            <td class="text-end">
+              <a href="{% url 'chat:survey_template_edit' t.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">Шаблонов нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

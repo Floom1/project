@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Дашборд аналитики</h4>
+  <div class="d-flex gap-2">
+    <a href="{% url 'analytics:report_excel' %}" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i> Excel
+    </a>
+    <a href="{% url 'analytics:report_pdf' %}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card shadow-sm border-start border-primary border-4">
+      <div class="card-body">
+        <div class="text-muted small">Открытых вакансий</div>
+        <div class="fs-3 fw-bold">{{ kpi.total_vacancies }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card shadow-sm border-start border-info border-4">
+      <div class="card-body">
+        <div class="text-muted small">Всего кандидатов</div>
+        <div class="fs-3 fw-bold">{{ kpi.total_candidates }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card shadow-sm border-start border-success border-4">
+      <div class="card-body">
+        <div class="text-muted small">Нанято за месяц</div>
+        <div class="fs-3 fw-bold">{{ kpi.hired_this_month }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card shadow-sm border-start border-warning border-4">
+      <div class="card-body">
+        <div class="text-muted small">Запланировано собеседований</div>
+        <div class="fs-3 fw-bold">{{ kpi.total_interviews_scheduled }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Воронка найма</h6></div>
+      <div class="card-body"><canvas id="funnelChart" height="260"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Время закрытия вакансий (дни)</h6></div>
+      <div class="card-body"><canvas id="tthChart" height="260"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Вакансии по отделам</h6></div>
+      <div class="card-body"><canvas id="deptChart" height="260"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Конверсия по этапам (%)</h6></div>
+      <div class="card-body"><canvas id="convChart" height="260"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Heatmap: собеседования по дням и часам</h6></div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered text-center mb-0" id="heatmapTable">
+            <thead>
+              <tr>
+                <th></th>
+                {% for h in "012345678901234567890123" %}
+                  <th class="small">{{ forloop.counter0 }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+
+new Chart(document.getElementById('funnelChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ funnel_labels|safe }},
+    datasets: [{
+      label: 'Кандидатов',
+      data: {{ funnel_data|safe }},
+      backgroundColor: COLORS,
+    }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('tthChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ tth_labels|safe }},
+    datasets: [{
+      label: 'Дней',
+      data: {{ tth_data|safe }},
+      backgroundColor: '#3b82f6',
+    }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('deptChart'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ dept_labels|safe }},
+    datasets: [{ data: {{ dept_data|safe }}, backgroundColor: COLORS }]
+  },
+});
+
+new Chart(document.getElementById('convChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ conv_labels|safe }},
+    datasets: [{
+      label: '%',
+      data: {{ conv_data|safe }},
+      backgroundColor: '#10b981',
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, max: 100 } }
+  }
+});
+
+// Heatmap
+(function() {
+  const data = {{ heatmap|safe }};
+  const days = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const tbody = document.querySelector('#heatmapTable tbody');
+  let maxVal = 0;
+  data.forEach(row => row.forEach(v => { if (v > maxVal) maxVal = v; }));
+
+  data.forEach((row, di) => {
+    let tr = document.createElement('tr');
+    let th = document.createElement('th');
+    th.textContent = days[di];
+    th.className = 'small';
+    tr.appendChild(th);
+    row.forEach(v => {
+      let td = document.createElement('td');
+      td.className = 'small';
+      if (v > 0) {
+        const intensity = maxVal > 0 ? v / maxVal : 0;
+        td.style.background = `rgba(59,130,246,${0.15 + intensity * 0.85})`;
+        td.style.color = intensity > 0.5 ? '#fff' : '#1e293b';
+        td.textContent = v;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+})();
+</script>
+{% endblock %}

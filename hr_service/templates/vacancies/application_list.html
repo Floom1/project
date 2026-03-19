@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Отклики — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Отклики</h4>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white d-flex gap-2 flex-wrap">
+    <a href="{% url 'vacancies:application_list' %}"
+       class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">Все</a>
+    {% for value, label in status_choices %}
+      <a href="?status={{ value }}"
+         class="btn btn-sm {% if status_filter == value %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>Кандидат</th><th>Вакансия</th><th>Статус</th><th>Этап</th><th>Дата</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for a in applications %}
+          <tr>
+            <td>{{ a.candidate }}</td>
+            <td>{{ a.vacancy.title }}</td>
+            <td>
+              {% if a.status == "new" %}<span class="badge bg-primary">Новый</span>
+              {% elif a.status == "screening" %}<span class="badge bg-info">Скрининг</span>
+              {% elif a.status == "interview" %}<span class="badge bg-warning text-dark">Собеседование</span>
+              {% elif a.status == "offer" %}<span class="badge bg-success">Оффер</span>
+              {% elif a.status == "hired" %}<span class="badge bg-success">Нанят</span>
+              {% elif a.status == "rejected" %}<span class="badge bg-danger">Отклонён</span>
+              {% endif %}
+            </td>
+            <td>{{ a.current_stage.title|default:"—" }}</td>
+            <td>{{ a.applied_at|date:"d.m.Y" }}</td>
+            <td class="text-end">
+              <a href="{% url 'vacancies:application_detail' a.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">Откликов нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

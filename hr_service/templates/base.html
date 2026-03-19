@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HR-Сервис{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --sidebar-bg: #1e293b;
+      --sidebar-hover: #334155;
+      --sidebar-active: #3b82f6;
+      --topbar-height: 56px;
+    }
+    body { background: #f1f5f9; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      color: #cbd5e1;
+      overflow-y: auto;
+      z-index: 1030;
+      transition: transform .2s;
+    }
+    .sidebar-brand {
+      height: var(--topbar-height);
+      display: flex; align-items: center; padding: 0 1.25rem;
+      font-size: 1.15rem; font-weight: 600; color: #fff;
+      border-bottom: 1px solid #334155;
+    }
+    .sidebar-nav { padding: .75rem 0; }
+    .sidebar-nav .nav-link {
+      color: #94a3b8; padding: .6rem 1.25rem;
+      display: flex; align-items: center; gap: .65rem;
+      font-size: .9rem; border-radius: 0;
+      transition: background .15s, color .15s;
+    }
+    .sidebar-nav .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+    .sidebar-nav .nav-link.active { background: var(--sidebar-active); color: #fff; }
+    .sidebar-nav .nav-section {
+      padding: .5rem 1.25rem .25rem; font-size: .7rem;
+      text-transform: uppercase; letter-spacing: .08em; color: #64748b;
+      margin-top: .5rem;
+    }
+    .topbar {
+      position: fixed; top: 0; left: var(--sidebar-width); right: 0;
+      height: var(--topbar-height);
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; padding: 0 1.5rem;
+      z-index: 1020;
+    }
+    .main-content {
+      margin-left: var(--sidebar-width);
+      margin-top: var(--topbar-height);
+      padding: 1.5rem;
+      min-height: calc(100vh - var(--topbar-height));
+    }
+    .notification-badge {
+      position: absolute; top: -4px; right: -4px;
+      font-size: .65rem; min-width: 18px;
+    }
+    @media (max-width: 991.98px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.show { transform: translateX(0); }
+      .topbar { left: 0; }
+      .main-content { margin-left: 0; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <i class="bi bi-people-fill me-2"></i> HR-Сервис
+    </div>
+    <div class="sidebar-nav">
+      {% if user.is_candidate %}
+        <div class="nav-section">Меню</div>
+        <a class="nav-link {% if request.resolver_match.app_name == 'vacancies' %}active{% endif %}"
+           href="{% url 'vacancies:vacancy_list' %}">
+          <i class="bi bi-briefcase"></i> Вакансии
+        </a>
+        <a class="nav-link {% if request.resolver_match.app_name == 'documents' %}active{% endif %}"
+           href="{% url 'documents:document_list' %}">
+          <i class="bi bi-file-earmark-text"></i> Мои документы
+        </a>
+        <a class="nav-link {% if request.resolver_match.app_name == 'chat' %}active{% endif %}"
+           href="{% url 'chat:room_list' %}">
+          <i class="bi bi-chat-dots"></i> Чат
+        </a>
+      {% endif %}
+
+      {% if user.can_manage %}
+        <div class="nav-section">Рекрутинг</div>
+        <a class="nav-link {% if request.resolver_match.app_name == 'vacancies' and 'application' not in request.resolver_match.url_name|default:'' and 'interview' not in request.resolver_match.url_name|default:'' %}active{% endif %}"
+           href="{% url 'vacancies:vacancy_list' %}">
+          <i class="bi bi-briefcase"></i> Вакансии
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'application_list' %}active{% endif %}"
+           href="{% url 'vacancies:application_list' %}">
+          <i class="bi bi-person-lines-fill"></i> Отклики
+        </a>
+        <a class="nav-link {% if 'interview' in request.resolver_match.url_name|default:'' %}active{% endif %}"
+           href="{% url 'vacancies:interview_list' %}">
+          <i class="bi bi-calendar-event"></i> Собеседования
+        </a>
+        <div class="nav-section">Коммуникации</div>
+        <a class="nav-link {% if request.resolver_match.app_name == 'chat' %}active{% endif %}"
+           href="{% url 'chat:room_list' %}">
+          <i class="bi bi-chat-dots"></i> Чаты
+        </a>
+        <a class="nav-link {% if request.resolver_match.app_name == 'documents' %}active{% endif %}"
+           href="{% url 'documents:document_list' %}">
+          <i class="bi bi-file-earmark-text"></i> Документы
+        </a>
+      {% endif %}
+
+      {% if user.can_view_analytics %}
+        <div class="nav-section">Аналитика</div>
+        <a class="nav-link {% if request.resolver_match.app_name == 'analytics' %}active{% endif %}"
+           href="{% url 'analytics:dashboard' %}">
+          <i class="bi bi-graph-up"></i> Дашборд
+        </a>
+      {% endif %}
+
+      {% if user.is_admin_role %}
+        <div class="nav-section">Система</div>
+        <a class="nav-link" href="{% url 'admin:index' %}">
+          <i class="bi bi-gear"></i> Админ-панель
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <div class="topbar">
+    <button class="btn btn-link text-dark d-lg-none me-2" onclick="document.getElementById('sidebar').classList.toggle('show')">
+      <i class="bi bi-list fs-4"></i>
+    </button>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      {% if user.can_manage or user.is_candidate %}
+      <a href="{% url 'vacancies:notification_list' %}" class="btn btn-light btn-sm position-relative">
+        <i class="bi bi-bell"></i>
+        <span id="notification-count" class="badge bg-danger notification-badge d-none">0</span>
+      </a>
+      {% endif %}
+      <div class="dropdown">
+        <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle me-1"></i> {{ user.get_short_name|default:user.username }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><span class="dropdown-item-text text-muted small">{{ user.get_role_display }}</span></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person me-2"></i>Профиль</a></li>
+          <li>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Выйти</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <main class="main-content">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+{% else %}
+  {% block anonymous_content %}{% endblock %}
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% if user.is_authenticated %}
+<script>
+function updateNotifications() {
+  fetch("{% url 'vacancies:unread_notification_count' %}")
+    .then(r => r.json())
+    .then(data => {
+      const badge = document.getElementById("notification-count");
+      if (badge) {
+        if (data.count > 0) {
+          badge.textContent = data.count;
+          badge.classList.remove("d-none");
+        } else {
+          badge.classList.add("d-none");
+        }
+      }
+    })
+    .catch(() => {});
+}
+updateNotifications();
+setInterval(updateNotifications, 15000);
+</script>
+{% endif %}
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты: {{ survey.template.title }} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>{{ survey.template.title }}</h5>
+        <span class="badge bg-{% if survey.status == 'completed' %}success{% else %}warning{% endif %}">
+          {{ survey.get_status_display }}
+        </span>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">Кандидат: {{ survey.candidate }}</p>
+        {% for a in answers %}
+          <div class="mb-3">
+            <div class="fw-bold">{{ forloop.counter }}. {{ a.question.text }}</div>
+            <div class="mt-1 p-2 bg-light rounded">{{ a.answer_text }}</div>
+          </div>
+        {% empty %}
+          <p class="text-muted">Ответов пока нет.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

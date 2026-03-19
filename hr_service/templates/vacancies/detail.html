@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vacancy.title }} — HR-Сервис{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h4 class="mb-1">{{ vacancy.title }}</h4>
+    <span class="text-muted"><i class="bi bi-building me-1"></i>{{ vacancy.department }}</span>
+    {% if vacancy.salary_from or vacancy.salary_to %}
+      &middot;
+      {% if vacancy.salary_from %}от {{ vacancy.salary_from|floatformat:0 }}{% endif %}
+      {% if vacancy.salary_to %} до {{ vacancy.salary_to|floatformat:0 }}{% endif %} &#8381;
+    {% endif %}
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    {% if vacancy.status == "open" %}
+      <span class="badge bg-success fs-6">Открыта</span>
+    {% elif vacancy.status == "on_hold" %}
+      <span class="badge bg-warning text-dark fs-6">Приостановлена</span>
+    {% else %}
+      <span class="badge bg-secondary fs-6">Закрыта</span>
+    {% endif %}
+    {% if user.can_manage %}
+      <a href="{% url 'vacancies:vacancy_edit' vacancy.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil"></i>
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white"><h6 class="mb-0">Описание</h6></div>
+      <div class="card-body">{{ vacancy.description|linebreaksbr }}</div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Этапы собеседования</h6>
+        {% if user.can_manage %}
+          <a href="{% url 'vacancies:stage_add' vacancy.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg"></i> Добавить
+          </a>
+        {% endif %}
+      </div>
+      <div class="list-group list-group-flush">
+        {% for stage in stages %}
+          <div class="list-group-item">
+            <div class="d-flex align-items-center">
+              <span class="badge bg-primary rounded-pill me-3">{{ stage.order }}</span>
+              <div>
+                <strong>{{ stage.title }}</strong>
+                {% if stage.description %}<div class="text-muted small">{{ stage.description }}</div>{% endif %}
+                {% if stage.survey_template %}
+                  <div class="small"><i class="bi bi-clipboard-check me-1"></i>Опрос: {{ stage.survey_template.title }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="list-group-item text-muted">Этапы не заданы</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if applications %}
+      <div class="card shadow-sm">
+        <div class="card-header bg-white"><h6 class="mb-0">Отклики ({{ applications|length }})</h6></div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr><th>Кандидат</th><th>Статус</th><th>Этап</th><th>Дата</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for a in applications %}
+                <tr>
+                  <td>{{ a.candidate }}</td>
+                  <td><span class="badge bg-info">{{ a.get_status_display }}</span></td>
+                  <td>{{ a.current_stage.title|default:"—" }}</td>
+                  <td>{{ a.applied_at|date:"d.m.Y" }}</td>
+                  <td class="text-end">
+                    <a href="{% url 'vacancies:application_detail' a.pk %}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    {% if user.is_candidate and vacancy.status == "open" %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          {% if already_applied %}
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-check-circle me-1"></i> Вы уже откликнулись.
+              <div class="mt-1 small">Статус: <strong>{{ application.get_status_display }}</strong></div>
+            </div>
+          {% else %}
+            <form method="post" action="{% url 'vacancies:vacancy_apply' vacancy.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-send me-1"></i> Откликнуться
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <p class="mb-1"><small class="text-muted">Создана:</small> {{ vacancy.created_at|date:"d.m.Y" }}</p>
+        {% if vacancy.created_by %}<p class="mb-0"><small class="text-muted">Автор:</small> {{ vacancy.created_by }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{% url 'vacancies:vacancy_list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> К списку
+  </a>
+</div>
+{% endblock %}
