@@ -8,4 +8,5 @@ wheels/
 
 # Virtual environments
 .venv
-hr_service/db.sqlite3
+db.sqlite3
+.DS_store
